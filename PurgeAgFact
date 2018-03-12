@@ -1,0 +1,30 @@
+--SCRIPT TO PURGE ALL fact tables
+--This will not purge import fact tables
+
+use agFact
+go
+declare @TableName varchar(128)
+	,@SQL nvarchar(max)
+
+DECLARE table_cursor CURSOR FOR   
+SELECT name
+FROM sys.tables
+WHERE name like 'fact_%'
+order by name 
+
+OPEN table_cursor  
+
+FETCH NEXT FROM table_cursor   
+INTO @TableName
+
+WHILE @@FETCH_STATUS = 0  
+BEGIN  
+
+	set @SQL = 'Truncate table ' + @TableName
+	exec sp_executesql @SQL
+
+    FETCH NEXT FROM table_cursor   
+    INTO @TableName
+END   
+CLOSE table_cursor;  
+DEALLOCATE table_cursor;  
