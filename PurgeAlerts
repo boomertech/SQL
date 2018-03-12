@@ -1,0 +1,5 @@
+--script to purge alerts 
+
+ use evGlobalConfig
+ go
+DELETE ComplianceMonitorAlert
