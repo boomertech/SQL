@@ -1,0 +1,35 @@
+-- Create Database
+-- Parameterized SQL Script, expects:
+-- @DatabaseDirectory varchar(50)
+-- @DatabaseLogDirectory varchar(50)
+-- @DatabaseName varchar(50)
+
+-- remove trailing backslashes, add exactly one back
+set @DatabaseDirectory = replace(replace(rtrim(replace(replace(@DatabaseDirectory,' ','|'),'\',' ')),' ','\'),'|',' ') + '\'
+set @DatabaseLogDirectory = replace(replace(rtrim(replace(replace(@DatabaseLogDirectory,' ','|'),'\',' ')),' ','\'),'|',' ') + '\'
+
+-- escape single quotes with double quotes
+set @DatabaseName = replace(@DatabaseName, '''', '''''')
+set @DatabaseDirectory = replace(@DatabaseDirectory, '''', '''''')
+set @DatabaseLogDirectory = replace(@DatabaseLogDirectory, '''', '''''')
+
+-- substitute and excecute dynamic sql
+declare @sql nvarchar(max) = '
+if DB_ID(''' + @DatabaseName + ''') IS NULL
+BEGIN
+	CREATE DATABASE ' + @DatabaseName + '	
+	ON
+		(name = ''' + @DatabaseName + ''',
+		filename = ''' + @DatabaseDirectory + @DatabaseName + '.mdf'',
+		size = 4MB,
+		filegrowth = 256MB)
+	LOG ON
+		(name = ''' + @DatabaseName + 'Log'',
+		filename = ''' + @DatabaseLogDirectory + @DatabaseName + '.ldf'',
+		size = 1MB,
+		filegrowth = 1MB)
+
+	ALTER DATABASE ' + @DatabaseName + ' SET RECOVERY SIMPLE
+END
+'
+exec sys.sp_executesql @sql
