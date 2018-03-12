@@ -1,0 +1,39 @@
+--SCRIPT TO PURGE ALL POS DATA
+
+USE StoreVision
+GO
+-- can't move Transactions due to FK constraint, so drop the FK. will re-add later.
+IF  EXISTS (SELECT * FROM sys.foreign_keys WHERE object_id = OBJECT_ID(N'[dbo].[FK_RetailTransactionDetail_RetailTransaction]') AND parent_object_id = OBJECT_ID(N'[dbo].[RetailTransactionDetail]'))
+ALTER TABLE [dbo].[RetailTransactionDetail] DROP CONSTRAINT [FK_RetailTransactionDetail_RetailTransaction]
+go
+
+truncate table retailtransactiondetail
+go
+declare @rowcount int = 1
+while @rowcount > 0
+begin
+       delete top (100000) 
+       from RetailTransaction 
+       set @rowcount = @@ROWCOUNT
+end
+go
+                     -- Recreate the FK
+ALTER TABLE [dbo].[RetailTransactionDetail]  WITH CHECK ADD  CONSTRAINT [FK_RetailTransactionDetail_RetailTransaction] FOREIGN KEY([TransactionTime], [TransactionID])
+       REFERENCES [dbo].[RetailTransaction] ([TransactionTime], [TransactionID])
+ALTER TABLE [dbo].[RetailTransactionDetail] CHECK CONSTRAINT [FK_RetailTransactionDetail_RetailTransaction]
+go
+if exists (select name from sys.procedures where name = 'usp_DeleteAuxiliaryTableOrphans')
+	exec usp_DeleteAuxiliaryTableOrphans
+go
+
+truncate table TLOGAvailability
+
+go
+if exists (select name from sys.tables where name = 'Item')
+	truncate table item
+go
+if exists (select name from sys.tables where name = 'Itembystore')
+	truncate table Itembystore
+
+
+
