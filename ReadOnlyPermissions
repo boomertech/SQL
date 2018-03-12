@@ -1,0 +1,77 @@
+ 
+use [master]
+GO
+--CREATE THE SERVER ROLE TO GRANT PERMISSIONS
+IF NOT EXISTS (SELECT * FROM SYS.server_principals WHERE type = 'R' AND NAME = 'ViewServer')
+	CREATE SERVER ROLE [ViewServer]
+GO
+GRANT CONNECT ANY DATABASE TO [ViewServer]
+GO
+GRANT CONNECT SQL TO [ViewServer]
+GO
+GRANT VIEW ANY DATABASE TO [ViewServer]
+GO
+GRANT VIEW ANY DEFINITION TO [ViewServer]
+GO
+GRANT VIEW SERVER STATE TO [ViewServer]
+GO
+GRANT SELECT ALL USER SECURABLES TO [ViewServer]
+go
+GRANT ALTER TRACE TO [ViewServer]
+GO
+ALTER AUTHORIZATION ON SERVER ROLE::[ViewServer] TO sa
+GO
+
+
+--CREATE LOGIN
+IF NOT EXISTS (SELECT NAME FROM MASTER.SYS.server_principals WHERE NAME = 'AgilenceInc\SQLGroupName')
+	CREATE LOGIN [AgilenceInc\SQLGroupName] FROM WINDOWS
+GO
+ALTER SERVER ROLE [ViewServer] ADD MEMBER [AgilenceInc\SQLGroupName]
+GO
+
+
+--PERMISSIONS ON PROCEDURES
+--NEED TO EVALUATE LONG TERM APPROACH TO RESTRICT WHICH PROCEDURES ARE REQUIRED
+
+USE StoreVision 
+GO
+IF NOT EXISTS (SELECT NAME FROM SYS.DATABASE_principals WHERE NAME = 'AgilenceInc\SQLGroupName')
+	CREATE USER [AgilenceInc\SQLGroupName] FOR LOGIN [AgilenceInc\SQLGroupName]
+GO
+GRANT EXECUTE ON SCHEMA::dbo TO  [AgilenceInc\SQLGroupName]
+GO
+GRANT SELECT ON SCHEMA::dbo TO  [AgilenceInc\SQLGroupName]
+GO
+sp_addrolemember 'db_datareader','AgilenceInc\SQLGroupName'
+GO
+USE evGlobalConfig
+GO
+IF NOT EXISTS (SELECT NAME FROM SYS.DATABASE_principals WHERE NAME = 'AgilenceInc\SQLGroupName')
+	CREATE USER [AgilenceInc\SQLGroupName] FOR LOGIN [AgilenceInc\SQLGroupName]
+GO
+GRANT EXECUTE ON SCHEMA::dbo TO  [AgilenceInc\SQLGroupName]
+GO
+GRANT SELECT ON SCHEMA::dbo TO  [AgilenceInc\SQLGroupName]
+GO
+sp_addrolemember 'db_datareader','AgilenceInc\SQLGroupName'
+GO
+USE agFact
+GO
+IF NOT EXISTS (SELECT NAME FROM SYS.DATABASE_principals WHERE NAME = 'AgilenceInc\SQLGroupName')
+	CREATE USER [AgilenceInc\SQLGroupName] FOR LOGIN [AgilenceInc\SQLGroupName]
+GO
+GRANT EXECUTE ON SCHEMA::dbo TO  [AgilenceInc\SQLGroupName]
+GO
+GRANT SELECT ON SCHEMA::dbo TO  [AgilenceInc\SQLGroupName]
+GO
+sp_addrolemember 'db_datareader','AgilenceInc\SQLGroupName'
+GO
+
+ --GRANT READ ONLY PERMISSIONS ON SqlAgent Jobs
+USE [msdb]
+GO
+IF NOT EXISTS (SELECT * FROM SYS.database_principals WHERE name = 'AgilenceInc\SQLGroupName')
+	CREATE USER [AgilenceInc\SQLGroupName] FOR LOGIN [AgilenceInc\SQLGroupName] WITH DEFAULT_SCHEMA=[dbo]
+GO
+sp_addrolemember 'SQLAgentReaderRole','AgilenceInc\SQLGroupName'
